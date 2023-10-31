@@ -4,6 +4,7 @@ from base64 import b64encode
 from .scan import Scan
 from .subject import Subject
 from .tool import Tool
+from .tag import Tag
 class Aggregator:
     def __init__(self, base_uri, user, passwd):
         self.base_uri = base_uri
@@ -61,10 +62,8 @@ class Aggregator:
                 return False
             return True
 
-    def createSubject(self, name, path, soft_hash, hard_hash, version="1.0", host=None):
-        if not host:
-            host = platform.node()
-        subject = Subject(name, soft_hash, hard_hash, host, path, version)
+    def createSubject(self, name, path, soft_hash, hard_hash, parent, tags, version="1.0"):
+        subject = Subject(name, soft_hash, hard_hash, parent, path, version, tags)
         for i in range(2):
             resp = self.postRequest("/api/subject/create", subject.toDict())
             if not self.checkErrorAndReauthenticate(resp):
@@ -72,6 +71,7 @@ class Aggregator:
             if resp.get("error"):
                 print("Couldn't create subject. Error:", resp.get("error"))
                 return None
+            subject.id = int(resp.get('id'))
             return subject
         return None
         
@@ -95,3 +95,14 @@ class Aggregator:
             print("Couldn't create tool. Error:", resp.get("error"))
             return None
         return tool
+
+    def createTag(self, name, shortname, description, color='gray', special='NONE'):
+        if not self.token:
+            self.reauthenticate()
+        tag = Tag(shortname, name, description, color, special)
+        resp = self.postRequest("/api/tag/register", tag.toDict())
+        if resp.get("error"):
+            print("Couldn't create tag. Error:", resp.get("error"))
+            return None
+        tag.id = resp.get("id")
+        return tag
