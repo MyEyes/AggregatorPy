@@ -22,7 +22,10 @@ class Aggregator:
             auth = f"{user}:{passwd}".encode()
             headers["Authorization"] = f"Basic {b64encode(auth).decode()}"
         resp = requests.post(self.base_uri+endpoint, headers=headers, json=json)
-        return APIResponse(resp.json())
+        try:
+            return APIResponse(resp.json())
+        except requests.exceptions.JSONDecodeError:
+            raise Exception(f"Server response had unexpected format:\nReq:\n{json}\nResp:\n{resp.text}")
 
     def reauthenticate(self):
         resp = self.postRequest("/api/auth/tokens", {}, self.user, self.passwd)
