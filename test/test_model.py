@@ -44,6 +44,22 @@ if __name__ == "__main__":
         res.submit()
         res2.submit()
 
+    # Creating a second root subject to demonstrate tree diff
+    parent = Subject(agg, 'root2', GetSHA256String('root2'), -1, [FilePathProperty(abspath(".")), DirNameProperty(basename(abspath(".")))], [openTag, rootTag, dirTag, testTag])
+
+    for filename in ["testFileA", "testFileB", "testFileC"]:
+        #Changed hard hash to make it a separate subject
+        subj = Subject(agg, filename, GetSHA256String(filename+"2"), parent, [FilePathProperty(abspath(filename)), FileNameProperty(filename)], [openTag, fileTag, testTag])
+        if not subj:
+            print("Aborting couldn't create subject for", filename)
+            exit(-1)
+        result_text = f"## Test Result\n```There's no problem with {filename} this is just a test for diff```"
+        res = Result(agg, _scan.get_id(), subj.get_id(), GetSHA256String(result_text), 'Test Result 1', result_text, [ContainingPathProperty(abspath(filename))], [openTag, testTag])
+        #result = Result(scan.scan_hash, subj.hash, GetSHA256String(result_text), GetSHA256String(result_text), risk, 'Test Result', result_text, [open_tag, test_tag])
+        # Submitting here should recursively trigger the creation of 
+        res.submit()
+        res2.submit()
+
     _scan.stop() # Scan should be stopped explicitly, even if it wasn't explicitly started
     print("Done submitting")
     exit(0)
