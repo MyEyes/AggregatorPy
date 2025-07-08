@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # Creating a root subject to demonstrate tree view
     parent = Subject(agg, 'root', GetSHA256String('root'), -1, [FilePathProperty(abspath(".")), DirNameProperty(basename(abspath(".")))], [openTag, rootTag, dirTag, testTag])
 
-    for filename in ["testFileA", "testFileB", "testFileC"]:
+    for filename in ["testFileA", "testFileB", "testFileC", "testFileD"]:
         subj = Subject(agg, filename, GetSHA256String(filename), parent, [FilePathProperty(abspath(filename)), FileNameProperty(filename)], [openTag, fileTag, testTag])
         if not subj:
             print("Aborting couldn't create subject for", filename)
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     # Creating a second root subject to demonstrate tree diff
     parent = Subject(agg, 'root2', GetSHA256String('root2'), -1, [FilePathProperty(abspath(".")), DirNameProperty(basename(abspath(".")))], [openTag, rootTag, dirTag, testTag])
 
-    for filename in ["testFileA", "testFileB", "testFileC"]:
+    for filename in ["testFileA", "testFileB", "testFileC", "testFileE"]:
         #Changed hard hash to make it a separate subject
         subj = Subject(agg, filename, GetSHA256String(filename+"2"), parent, [FilePathProperty(abspath(filename)), FileNameProperty(filename)], [openTag, fileTag, testTag])
         if not subj:
