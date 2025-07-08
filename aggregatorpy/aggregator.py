@@ -1,10 +1,12 @@
 import requests
 import platform
 from base64 import b64encode
-from .scan import Scan
-from .subject import Subject
-from .tool import Tool
-from .tag import Tag
+from .model.scan import Scan
+from .model.subject import Subject
+from .model.tool import Tool
+from .model.tag import Tag
+from .model.api_response import APIResponse
+
 class Aggregator:
     def __init__(self, base_uri, user, passwd):
         self.base_uri = base_uri
@@ -20,14 +22,14 @@ class Aggregator:
             auth = f"{user}:{passwd}".encode()
             headers["Authorization"] = f"Basic {b64encode(auth).decode()}"
         resp = requests.post(self.base_uri+endpoint, headers=headers, json=json)
-        return resp.json()
+        return APIResponse(resp.json())
 
     def reauthenticate(self):
         resp = self.postRequest("/api/auth/tokens", {}, self.user, self.passwd)
-        if resp.get("error"):
-            print("Error authenticating:", resp.get("error"))
+        if resp.error:
+            print("Error authenticating:", resp.error)
             return False
-        self.token = resp.get("token")
+        self.token = resp.token
         if not self.token:
             print("Error: authentication token empty")
             return False
@@ -38,14 +40,14 @@ class Aggregator:
             self.reauthenticate()
         scan = Scan(tool.hard_match_hash, hard_hash,soft_hash, arguments)
         resp = self.postRequest("/api/scan/start", scan.toDict())
-        if resp.get("error"):
-            print("Error starting scan:", resp.get("error"))
+        if resp.error:
+            print("Error starting scan:", resp.error)
             return None
         return scan
 
     #Returns True when the request is done, false when it should be retried
     def checkErrorAndReauthenticate(self, resp):
-        err = resp.get("error")
+        err = resp.error
         if err:
             if err == "401":
                 return not self.reauthenticate() #Only retry if succesfully authenticated
@@ -53,56 +55,11 @@ class Aggregator:
         return True
 
     def stopScan(self, scan):
-        for i in range(2):
-            resp = self.postRequest("/api/scan/stop", scan.toDict())
+        for _ in range(2):
+            resp = self.postRequest("/api/scan/stop", scan.to_dict())
             if not self.checkErrorAndReauthenticate(resp):
                 continue
-            if resp.get("error"):
-                print("Couldn't stop scan. Error:", resp.get("error"))
+            if resp.error:
+                print("Couldn't stop scan. Error:", resp.error)
                 return False
             return True
-
-    def createSubject(self, name, path, soft_hash, hard_hash, parent, tags, version="1.0"):
-        subject = Subject(name, soft_hash, hard_hash, parent, path, version, tags)
-        for i in range(2):
-            resp = self.postRequest("/api/subject/create", subject.toDict())
-            if not self.checkErrorAndReauthenticate(resp):
-                continue
-            if resp.get("error"):
-                print("Couldn't create subject. Error:", resp.get("error"))
-                return None
-            subject.id = int(resp.get('id'))
-            return subject
-        return None
-        
-    def submitResult(self, result):
-        for i in range(2):
-            resp = self.postRequest("/api/scan/submit", result.toDict())
-            if not self.checkErrorAndReauthenticate(resp):
-                continue
-            if resp.get("error"):
-                print("Couldn't submit result. Error:", resp.get("error"))
-                return False
-            return True
-        return False
-
-    def createTool(self, name, soft_hash, hard_hash, description, version="1.0"):
-        if not self.token:
-            self.reauthenticate()
-        tool = Tool(name, soft_hash, hard_hash, version, description)
-        resp = self.postRequest("/api/tool/register", tool.toDict())
-        if resp.get("error"):
-            print("Couldn't create tool. Error:", resp.get("error"))
-            return None
-        return tool
-
-    def createTag(self, name, shortname, description, color='gray', special='NONE'):
-        if not self.token:
-            self.reauthenticate()
-        tag = Tag(shortname, name, description, color, special)
-        resp = self.postRequest("/api/tag/register", tag.toDict())
-        if resp.get("error"):
-            print("Couldn't create tag. Error:", resp.get("error"))
-            return None
-        tag.id = resp.get("id")
-        return tag
