@@ -38,14 +38,13 @@ class Aggregator:
             return False
         return True
 
-    def startScan(self, tool, soft_hash, hard_hash, arguments):
+    def startScan(self, tool, hard_hash, arguments):
         if not self.token:
             self.reauthenticate()
-        scan = Scan(tool.hard_match_hash, hard_hash,soft_hash, arguments)
-        resp = self.postRequest("/api/scan/start", scan.toDict())
-        if resp.error:
-            print("Error starting scan:", resp.error)
-            return None
+        scan = Scan(self, tool, hard_hash, arguments)
+        scan.submit()
+        if scan.get_id() == -1:
+            raise Exception("Scan didn't start for some reason")
         return scan
 
     #Returns True when the request is done, false when it should be retried

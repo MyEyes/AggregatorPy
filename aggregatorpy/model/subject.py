@@ -12,7 +12,7 @@ class Subject(APISubmittable):
         self._convertTags()
 
     def _convertTags(self):
-        tagIds = [tag._id for tag in self.tags]
+        tagIds = [tag.get_id() for tag in self.tags]
         self.tagIds = tagIds
 
     def _convertProperties(self):
@@ -20,7 +20,9 @@ class Subject(APISubmittable):
         self.propertyIds = propertyIds
 
     def _setParent(self, parent):
-        if isinstance(parent, Subject):
+        if parent is None:
+            self.parentId = -1
+        elif isinstance(parent, Subject):
             self.parentId = parent.get_id()
         elif isinstance(parent, int):
             self.parentId = parent
